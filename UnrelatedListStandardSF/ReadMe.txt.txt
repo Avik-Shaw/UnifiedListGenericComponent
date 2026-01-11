@@ -1,0 +1,1 @@
+Deploy this lwc and apex class to your org. Select Unrelated List as the component in your record, app or home pages. These contents are for the orgs where omnistudio is not enabled.

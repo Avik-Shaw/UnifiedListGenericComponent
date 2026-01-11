@@ -1,0 +1,158 @@
+<template>
+    <article class="card cardcontainer">
+
+        <div class="tableContainer">
+            <!-- Releated List Header Beginning -->
+            <div class="slds-card__header slds-m-top_medium fixedWidth">
+                <div class="slds-grid slds-grid_vertical-align-center slds-wrap">
+                    <div class="slds-col">
+                        <div class="slds-media slds-no-space slds-grow">
+                            <div class="slds-media__figure">
+                                <lightning-icon icon-name={iconName} size="small"></lightning-icon>
+                            </div>
+                            <div class="slds-media__body slds-align-middle">
+                                <h2 class="slds-card__header-title cardHeader">
+                                    <span class="slds-truncate slds-var-m-right_xx-small" title="Cases">{title}</span>
+                                    <span lwc:if={recordsLength} title={recordsLength}
+                                        class="slds-shrink-none slds-var-m-right_xx-small">({recordsLength})</span>
+                                </h2>
+                                <span class="reloadIcon">
+                                    <lightning-button-icon lwc:if={showReload} icon-name="action:refresh" size="small"
+                                        onclick={loadData}></lightning-button-icon>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Releated List Header End -->
+            <!-- Display Cases in a datatable if cases exist -->
+            <template lwc:if={isShowTable}>
+                <!-- Parent Table Beginning -->
+                <table
+                    class="slds-table slds-table_bordered slds-table_fixed-layout slds-table_resizable-cols parentTable fixedWidth">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="slds-text-align_right" scope="col" style="width:0.5rem">
+                                <div class="slds-truncate slds-assistive-text" id="column-group-header"
+                                    title="Expand Row">
+                                </div>
+                            </th>
+                            <template for:each={columns} for:item="col">
+                                <th key={col.fieldName} class="slds-is-resizable slds-is-sortable parentTableHeader"
+                                    scope="col" style={col.columnStyle}>
+                                    <div class="parentTableHeaderLabel slds-text-link_reset" role="button"
+                                        onclick={sortColumn} data-fieldname={col.fieldName}>
+                                        <div class="slds-grid slds-grid_vertical-align-center slds-has-flexi-truncate">
+                                            <span class="slds-truncate slds-var-m-right_x-small"
+                                                title={col.label}>{col.label}</span>
+                                            <template if:true={col.sortable}>
+                                                <template lwc:if={isAscending}>
+                                                    <lightning-icon icon-name="utility:arrowup" size="xx-small"
+                                                        class="asc" data-fieldname={col.fieldName}></lightning-icon>
+                                                </template>
+                                                <template lwc:else><lightning-icon icon-name="utility:arrowdown"
+                                                        size="xx-small" class="desc"
+                                                        data-fieldname={col.fieldName}></lightning-icon>
+                                                </template>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </th>
+                            </template>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={filteredCurrentdata} for:item="row">
+                            <tr class="slds-hint-parent collapsed" key={row.id} data-id={row.id}>
+                                <td class="slds-text-align_right" key={row.id} role="gridcell" style="width:0.5rem">
+                                </td>
+                                <template for:each={row.data} for:item="it" for:index="index">
+                                    <td key={it.label} data-label={it.value} role="gridcell" scope="row">
+                                        <div lwc:if={it.attribute} class="slds-truncate slds-text-link wrapLabel"
+                                            data-id={it.attribute} title={it.value} onmouseenter={showHoverLayout}
+                                            onmouseleave={showHoverLayout}>
+                                            <span data-id={it.attribute} onclick={navigateToRecord}
+                                                title={it.value}>{it.value}</span>
+                                            <div class="slds-card cardBackground hidden" data-id={it.attribute}>
+                                                <!-- Card Header -->
+                                                <div
+                                                    class="slds-grid slds-gutters slds-var-m-bottom_xx-small slds-var-m-left_small">
+                                                    <div class="slds-col_bump-right">
+                                                        <!-- Custom Icon -->
+                                                        <lightning-icon icon-name={iconName}
+                                                            alternative-text="Icon" title="Icon"
+                                                            class="icon"></lightning-icon>
+                                                    </div>
+                                                    <div class="slds-col slds-grow">
+                                                        <!-- Title -->
+                                                        <h3 class="slds-text-heading_medium slds-var-m-bottom_x-small">
+                                                            {row.subject}</h3>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Card Body with Grid Layout -->
+                                                <div
+                                                    class="slds-grid slds-wrap slds-grid_vertical-align-start cardBody">
+                                                    <template for:each={row.hoverData} for:item="hover">
+                                                        <div key={hover.label} class={hoverClass}>
+                                                            <div class="slds-text-title_caps slds-var-m-bottom_x-small">
+                                                                {hover.label}</div>
+                                                            <div class="slds-text-body_small">{hover.value}</div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div lwc:else class="slds-truncate wrapLabel" title={it.value}>
+                                            {it.value}
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+                <!-- Parent Table End -->
+                <!-- Pagination Beginning -->
+                <div
+                    class="slds-grid slds-grid_align-center slds-grid_vertical-align-center slds-p-around_small slds-border_top">
+                    <div class="slds-col slds-m-right_x-small">
+                        <a tabindex="0" onclick={handlePrevious} title="Previous Page" class="">
+                            <lightning-button-icon icon-name="utility:chevronleft" variant="border-filled"
+                                alternative-text="Previous" title="Previous" disabled={bDisableFirst}>
+                            </lightning-button-icon>
+                        </a>
+                    </div>
+                    <div class="slds-col">
+                        <template for:each={pageArray} for:item="p">
+                            <template lwc:if={p.selected}>
+                                <a key={p.page} data-page={p.page} data-id={p.page} onclick={handlePageSelect}
+                                    class="pagenostyleactive">{p.page}</a>
+                            </template>
+                            <template lwc:else>
+                                <a key={p.page} data-page={p.page} data-id={p.page} onclick={handlePageSelect}
+                                    class="pagenostyle">{p.page}</a>
+                            </template>
+                        </template>
+                    </div>
+                    <div class="slds-col slds-m-left_x-small">
+                        <a tabindex="0" title="Next Page" onclick={handleNext}>
+                            <lightning-button-icon icon-name="utility:chevronright" variant="border-filled"
+                                alternative-text="Next" title="Next" disabled={bDisableLast}></lightning-button-icon>
+                        </a>
+                    </div>
+                </div>
+                <!-- Pagination End -->
+            </template>
+            <!-- Show message if no records are found -->
+            <template lwc:else>
+                <div class="slds-var-p-around_medium">
+                    <div class="slds-text-align_center slds-text-color_weak">
+                        <p>No records found</p>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </article>
+</template>
