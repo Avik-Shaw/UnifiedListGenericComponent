@@ -1,7 +1,7 @@
 <template>
     <div lwc:if={sourcedata}>
         <c-unified-list records={sourcedata} icon-name={iconName} title={title} page-size={pageSize}
-        is-salesforce-data={isSalesforceData} hover-columns={hoverColumns}></c-unified-list>
+        infinite-scrolling={infiniteScrolling} is-salesforce-data={isSalesforceData} hover-columns={hoverColumns}></c-unified-list>
     </div>
     <div lwc:else>
         <div class="loader">

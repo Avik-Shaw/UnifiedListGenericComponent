@@ -16,6 +16,7 @@ export default class UnifiedListFeeder extends LightningElement {
     @api iconName;
     @api title;
     @api pageSize;
+    @api infiniteScrolling = false;
     @api isSalesforceData = false;
     @api hoverColumns;
     

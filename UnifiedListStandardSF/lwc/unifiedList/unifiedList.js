@@ -1,8 +1,11 @@
 /*
 @description: This component is used to display a list of records in a table format.
 @author: Avik Shaw
-@version: 1.0
-@date: 2026-01-11
+@version: 1.1
+@date: 2026-06-24
+@version notes: 
+v1.0: Initial version
+v1.1: Added infinite scrolling functionality
 */
 import { LightningElement, api, track, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
@@ -14,6 +17,7 @@ export default class UnifiedList extends NavigationMixin(LightningElement) {
     @api iconName;
     @api title;
     @api pageSize;
+    @api infiniteScrolling;
     @api isSalesforceData;
     @api hoverColumns;
     @track sortedData;
@@ -35,6 +39,10 @@ export default class UnifiedList extends NavigationMixin(LightningElement) {
     pageArray = [];
     selectedcurrrentpage;
     btnclassname = "pagenostyle";
+    // Infinite Scrolling Properties
+    @track loadedRecordsCount = 0;
+    @track showScrollToTop = false;
+    isLoadingMore = false;
 
     formatDate = new Intl.DateTimeFormat('en-US', {
         month: 'numeric',
@@ -67,6 +75,8 @@ export default class UnifiedList extends NavigationMixin(LightningElement) {
             }
         }
     }
+
+    disconnectedCallback() {}
 
     loadData(){
         if(!Array.isArray(this.records)){
@@ -166,10 +176,19 @@ export default class UnifiedList extends NavigationMixin(LightningElement) {
         }
         this.sortField = this.columns[0].fieldName;
         this.totalPages = Math.ceil(this.currentData?.length / this.pageSizeLocal);
-        const start = (this.currentPage - 1) * this.pageSizeLocal;
-        const end = start + this.pageSizeLocal;
-        this.filteredCurrentdata = this.currentData.slice(start, end);
+        this.recordsLength = this.currentData?.length;
+        // Handle infinite scrolling or pagination
+        if (this.infiniteScrolling) {
+            // For infinite scrolling, start with pageSize+2 records
+            this.loadedRecordsCount = Math.min(this.pageSizeLocal+2, this.currentData?.length);
+            this.filteredCurrentdata = this.currentData.slice(0, this.loadedRecordsCount);
+        } else {
+            const start = (this.currentPage - 1) * this.pageSizeLocal;
+            const end = start + this.pageSizeLocal;
+            this.filteredCurrentdata = this.currentData.slice(start, end);
+        }
         this.isShowTable = true; // Hide loading spinner
+        
     }
 
     isAscending = true;
@@ -399,5 +418,61 @@ export default class UnifiedList extends NavigationMixin(LightningElement) {
             this.currentPage = 1;
         }
         this.formatData(this.currentData, true);
+    }
+
+    // Infinite Scrolling Methods
+    // onscroll is bound directly in the template — no addEventListener,
+    // no proxy issues, no timing concerns.
+    handleInfiniteScroll(event) {
+        const container = event.currentTarget;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+
+        // Show the scroll-to-top button after scrolling past the first row height
+        this.showScrollToTop = scrollTop > clientHeight * 0.3;
+
+        // Load next batch when within 80px of the bottom
+        if (!this.isLoadingMore && scrollTop + clientHeight >= scrollHeight - 80) {
+            this.loadMoreRecords();
+        }
+    }
+
+    loadMoreRecords() {
+        if (this.loadedRecordsCount >= this.currentData.length || this.isLoadingMore) {
+            return; //All records are already loaded
+        }
+
+        this.isLoadingMore = true;
+
+        // Load next batch of records
+        const nextBatchSize = Math.min(this.pageSizeLocal, this.currentData.length - this.loadedRecordsCount);
+        const newLoadedCount = this.loadedRecordsCount + nextBatchSize;
+
+        // Add a slight delay for smooth loading experience
+        setTimeout(() => {
+            this.filteredCurrentdata = this.currentData.slice(0, newLoadedCount);
+            this.loadedRecordsCount = newLoadedCount;
+            this.isLoadingMore = false;
+        }, 100);
+    }
+
+    scrollToTop() {
+        const container = this.template.querySelector('.infinite-scroll-container');
+        if (container) {
+            // Use scrollTop directly as LWC proxy objects don't support scrollTo()
+            container.scrollTop = 0;
+        }
+    }
+
+    get isInfiniteScrollingEnabled() {
+        return this.infiniteScrolling === true;
+    }
+
+    get isPaginationEnabled() {
+        return !this.infiniteScrolling;
+    }
+
+    get tableWrapperClass() {
+        const className = this.infiniteScrolling ? 'infinite-scroll-container' : '';
+        return className;
     }
 }
